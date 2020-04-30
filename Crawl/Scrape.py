@@ -7,9 +7,7 @@ import datetime
 site = {
     'base_url':'',
     'regex':'',
-    'add_base_url': True/False,
-                    #regex for event attributes
-    'site_regex': '',
+        #regex for event attributes
     'name': '',
     'image': '',
     'startDate':'',
@@ -20,27 +18,50 @@ site = {
 """
 
 def CrawlSite(site):
-    req = requests.get(site['base_url']).text
-    soup = BeautifulSoup(req, "html.parser")
-    a = soup.find_all('a', {'href': re.compile(rf'{site["site_regex"]}')})
+    req = requests.get(site['base_url'])
+    if req.status_code != 200:
+        non_interest = NonInterestingUrl.objects.get(pk= site['pk'])
+        non_interest.poor = True
+        non_interest.save()
+        print("POOR Url...")
+        return
+    soup = BeautifulSoup(req.text, "html.parser")
+    a = soup.find_all('a', href = True)
     anew = soup.find_all('a', {'href': re.compile(rf'{site["regex"]}')})
     non_interest = set()
     interest = set()
-
-    if site['add_base_url']:
-        add_url = site['base_url']
-    else:
-        add_url = ''
-
+    n=0
     for i in a:
-        non_interest.add(i['href'])
+        if n>=10:
+            break
+        if i['href'][0]=='/':
+            non_interest.add(site['base_url'] + i['href'])
+            n+=1
+        elif i['href'][:len(site['base_url'])]==site['base_url']:
+            non_interest.add(i['href'])
+            n+=1
+    n=0
     for i in anew:
-        interest.add(add_url + i['href'])
+        if n>=10:
+            break
+        if i['href'][0]=='/':
+            interest.add(site['base_url'] + i['href'])
+            n+=1
+        else:
+            interest.add(i['href'])
+            n+=1
     non_interest -= interest
-    addInterest(interest, site['sitedata'])
-    addNonInterest(non_interest, site['sitedata'])
+    print(site['base_url'])
     print("Crawled Data from " + site['base_url'] + "successfully")
-    
+    print(interest)
+    if interest=={}:
+        non_interest = NonInterestingUrl.objects.get(pk= site['pk'])
+        non_interest.poor = True
+        non_interest.save()
+        print("POOR Url...")
+        return
+    addInterest(interest, site['sitedata'])
+    addNonInterest(non_interest, site['sitedata'])    
 
 def addInterest(interest, sitedata):
     for i in interest:
@@ -48,7 +69,8 @@ def addInterest(interest, sitedata):
             data = InterestingUrl(url = i, sitedata = sitedata)
             data.save()
         except:
-            pass 
+            pass
+    print(str(len(interest)) + " interesting urls added") 
 
 def addNonInterest(non_interest, sitedata):
     for i in non_interest:
@@ -57,10 +79,18 @@ def addNonInterest(non_interest, sitedata):
             data.save() 
         except:
             pass
+    print(str(len(non_interest)) + " non-interesting urls added")
 
 def scrape(site):
-    req = requests.get(site['url']).text
-    soup = BeautifulSoup(req, "html.parser")
+    print('Scraping for ' + site['url'])
+    req = requests.get(site['url'])
+    if req.status_code != 200:
+        interest = InterestingUrl.objects.get(pk= site['pk'])
+        interest.poor = True
+        interest.save()
+        print("POOR Url...")
+        return False
+    soup = BeautifulSoup(req.text, "html.parser")
     data = str(soup.find_all('script', type = "application/ld+json"))
     info = {
         'name': (re.compile(rf'{site["name"]}')).search(data).group(0)[8:-2].split('"')[0],
@@ -72,7 +102,6 @@ def scrape(site):
     print("Scrapped Data is:")
     for j in info:
         print(j + ":" + info[j])
-    #TODO : dates
     try:
         interest = InterestingUrl.objects.get(pk= site['pk'])
         interest.name = info['name']
@@ -82,6 +111,7 @@ def scrape(site):
         interest.endDate = info['endDate']
         interest.description = info['description'][:1000]
         interest.save()
+        print("Scraped Data for " + site['url'] + "Successfully")
         return True
     except:
         return False

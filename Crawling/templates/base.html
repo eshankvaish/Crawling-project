@@ -4,7 +4,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
   <title>Crawl</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
   <link href="{% static 'custom.css' %}" rel="stylesheet">
@@ -12,29 +12,70 @@
 
 <body>
 
-    <div class="container text-center jumbotron pt-10">
+    <div class="text-center pt-10"></div>
         <br>
-        <h1>Welcome {{ user.username }}</h1>
+        <h1 class="text-center">Welcome {{ user.username }}</h1>
         <hr>
-        <p>
-            <a href="{% url 'home' %}">
-                <button class="btn btn-primary">Home</button>
-            </a>
-            <br>
-            <br>
-            <a href="{% url 'scrawler' %}">
-                <button class="btn btn-primary">Crawl</button>
-            </a>
-            <br>
-            <br>
-            <a href="{% url 'scrape' %}">
-                <button class="btn btn-primary">Scrape</button>
-            </a>
-        </p>
-        <br>
-        <br>
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <table class="table table-striped table-responsive-md">
+                    <thead>
+                    <tr class="d-flex">
+                        <th scope="col" class="col-4">
+                            <a href="{% url 'home' %}">
+                                <button class="btn btn-primary">Home</button>
+                            </a>
+                        </th>
+                        <th scope="col" class="col-4">
+                            <a href="{% url 'scrawler' %}">
+                                <button class="btn btn-primary">Crawl</button>
+                            </a>
+                        </th>
+                        <th scope="col" class="col-4">
+                            <a href="{% url 'scrape' %}">
+                                <button class="btn btn-primary">Scrape</button>
+                            </a>
+                        </th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
         {% if res %}
-            <h2>{{ res }}</h2>
+            <h4 class="text-center">{{ res }}</h4>
+        {% endif %}
+        <hr>
+        {% if data %}
+            <div class="container text-center">
+                <p>
+                    Total Non-interesting Urls: {{ non_interest.count }} <br>
+                    Crawled Non-Interesting Urls: {{ crawled.count }} <br>
+                    Total Interesting Urls: {{ interest.count }} <br>
+                    Scraped Interesting Urls: {{ scraped.count }}
+                </p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-auto">
+                    <table class="table table-striped table-responsive-md">
+                        <thead>
+                        <tr class="d-flex">
+                            <th scope="col" class="col-1">Id</th>
+                            <th scope="col" class="col-2">Site Name</th>
+                            <th scope="col" class="col-9">Url</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in scraped %}
+                                <tr class="d-flex">
+                                    <th scope="row" class="col-1">{{ s.id }}</th>
+                                    <td class="col-2">{{ s.sitedata.site_name }}</td>
+                                    <td class="col-9">{{ s.url }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         {% endif %}
     </div>
 
